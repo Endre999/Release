@@ -1,12 +1,23 @@
 name: Publish DriveBridge APK
 
+# A fő ágra kerülő apk/<verzió>/ mappából GitHub Release-t készít.
+# Egy mappa tartalma: DriveBridge-<verzió>.apk, DriveBridge-<verzió>.apk.sha256,
+# KIADASI-JEGYZET.md, és tetszőleges további kísérőfájl.
+# Ha a verzióhoz már van Release, a mappát kihagyja.
+
 on:
   push:
-    tags:
-      - "drivebridge-reader-v*"
+    branches: [main]
+    paths:
+      - "apk/**"
+  workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: publish-drivebridge-apk
+  cancel-in-progress: false
 
 jobs:
   publish:
@@ -15,12 +26,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Publish direct APK release
+      - name: Verify and publish missing APK releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            "DriveBridgeReader-0.9.0-draft.apk#DriveBridge Reader 0.9.0-draft APK" \
-            --title "DriveBridge Reader 0.9.0-draft" \
-            --notes "Fejlesztői teszt-APK a telefonos ChatGPT-leirat és WhatsApp-piszkozat folyamathoz. Közvetlenül letölthető APK, ZIP-csomagolás nélkül. SHA-256: 215d0cd63d939bff6bae0e1a17160ca356a1c8239e0ad04211a72b0e51349ffd" \
-            --prerelease
+          set -euo pipefail
+          shopt -s nullglob
+          for dir in apk/*/; do
+            version="$(basename "$dir")"
+            if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$ ]]; then
+              echo "::error::Érvénytelen verziómappa: $dir"
+              exit 1
+            fi
+            tag="drivebridge-reader-v$version"
+            apk="DriveBridge-$version.apk"
+            notes="${dir}KIADASI-JEGYZET.md"
+            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              echo "A $tag kiadás már létezik, kihagyva."
+              continue
+            fi
+            test -s "$dir$apk"
+            test -s "$dir$apk.sha256"
+            test -s "$notes"
+            (cd "$dir" && sha256sum --check --strict "$apk.sha256")
+            assets=()
+            for file in "$dir"*; do
+              if [[ "$file" != "$notes" ]]; then
+                assets+=("$file")
+              fi
+            done
+            release_type=()
+            if [[ "$version" == *-* ]]; then
+              release_type=(--prerelease)
+            fi
+            gh release create "$tag" "${assets[@]}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "DriveBridge $version" \
+              --notes-file "$notes" \
+              "${release_type[@]}"
+            echo "Közzétéve: $tag"
+          done

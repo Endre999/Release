@@ -11,7 +11,7 @@ Az alkalmazás zárt tesztben van, és nincs a Google Playen. A tesztelők innen
 | Verzió | 0.9.0 (build 55) |
 | Kiadva | 2026-10-08 |
 | Fájl | `DriveBridge-0.9.0.apk`, 133 280 bájt |
-| Letöltés | [DriveBridge-0.9.0.apk](https://github.com/Endre999/Release/releases/download/v0.9.0/DriveBridge-0.9.0.apk) |
+| Letöltés | [DriveBridge-0.9.0.apk](https://github.com/Endre999/Release/releases/download/drivebridge-reader-v0.9.0/DriveBridge-0.9.0.apk) |
 | SHA-256 | `4b74baeb247747c5f9cc2050e430ac9d45406fb307d5c3b7ae70141f9b4b7650` |
 
 Minden kiadás a [Releases](https://github.com/Endre999/Release/releases) oldalon van, közvetlenül letölthető APK-ként, ZIP-csomagolás nélkül.
